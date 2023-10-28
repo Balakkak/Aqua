@@ -1,0 +1,114 @@
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+
+char ssid[] = "Deepa_2.4GHz";
+char pass[] = "tcs0008020001";
+String GAS_ID = "AKfycbzykm32yv3Ke_WE0aq9OdXC-tJTz7r1QGpkRIH3J7FaIDlMScKE6a1eijO2VNVRfKlLKw"; //--> spreadsheet script ID
+const char* host = "script.google.com"; // only google.com not https://google.com
+
+volatile int flow_frequency; // Measures flow sensor pulses
+// Calculated litres/hour
+float vol = 0.0,l_minute;
+int buzzer = 15;
+int sensor = 12;
+unsigned char flowsensor = 13; // Sensor Input
+unsigned long currentTime;
+unsigned long cloopTime;
+float a;
+int b = 1000;
+int c = 0;
+int val = 0;
+
+void update_google_sheet()
+{
+    Serial.print("connecting to ");
+    Serial.println(host);
+    WiFiClientSecure client;
+    const int httpPort = 443; // 80 is for HTTP / 443 is for HTTPS!
+    client.setInsecure(); // this is the magical line that makes everything work
+    
+    if (!client.connect(host, httpPort)) { //works!
+      Serial.println("connection failed");
+      return;
+    }
+    String url = "/macros/s/" + GAS_ID + "/exec?temperature=";  
+    url += String(a); 
+    Serial.print("Requesting URL: ");
+    Serial.println(url);
+    client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+                 "Host: " + host + "\r\n" + 
+                 "Connection: close\r\n\r\n");
+    Serial.println();
+    Serial.println("closing connection");  
+}
+
+void flow () // Interrupt function
+{
+   flow_frequency++;
+}
+
+void setup()
+{
+   pinMode(buzzer, OUTPUT);
+   pinMode(flowsensor, INPUT);
+   pinMode(sensor, INPUT);
+   digitalWrite(flowsensor, HIGH); // Optional Internal Pull-Up
+   Serial.begin(9600);
+   attachInterrupt(digitalPinToInterrupt(flowsensor), flow, RISING); // Setup Interrupt
+   currentTime = millis();
+   cloopTime = currentTime;
+   Serial.print("Connecting");
+   WiFi.begin(ssid, pass);
+   while (WiFi.status() != WL_CONNECTED);
+}
+
+void loop ()
+{
+   currentTime = millis();
+   // Every second, calculate and print litres/hour
+   if(currentTime >= (cloopTime + 1000))
+   {
+    cloopTime = currentTime; // Updates cloopTime
+    if(flow_frequency != 0){
+      // Pulse frequency (Hz) = 7.5Q, Q is flow rate in L/min.
+      l_minute = (flow_frequency / 7.5); // (Pulse frequency x 60 min) / 7.5Q = flowrate in L/hour
+      l_minute = (l_minute/60);
+      vol = vol +l_minute;
+      flow_frequency = 0; // Reset Counter
+      Serial.print(l_minute, DEC); // Print litres/hour
+      Serial.println(" L/min");
+      a = l_minute;
+      update_google_sheet();
+    }
+    else {
+      Serial.println(" flow rate = 0 ");
+    }
+   }
+  val = digitalRead(sensor);  //อ่านค่าสัญญาณ digital ขาD1 ที่ต่อกับ เซ็นเซอร์ตรวจจับวัตถุ IR Infrared
+  Serial.print("val = ");// พิมพ์ข้อมความส่งเข้าคอมพิวเตอร์ "val = "      
+  Serial.println(val); // พิมพ์ค่าของตัวแปร val
+  delay(1000);
+  digitalWrite(buzzer, HIGH);
+  Serial.println(c);
+  if (val==0) {
+  c++;
+  if (c>15){
+      
+      if(b>0){
+      
+      Serial.println("beep");
+      digitalWrite(buzzer , LOW);
+      delay(b);
+      b= b-100;
+      digitalWrite(buzzer, HIGH);
+      }
+      if(b<100){
+      digitalWrite(buzzer , LOW);
+      b=0;
+    }
+}
+}
+else if (val==1) {
+  c=0;
+}
+}
