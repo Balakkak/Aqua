@@ -1,9 +1,9 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
-char ssid[] = "Deepa_2.4GHz";
-char pass[] = "tcs0008020001";
-String GAS_ID = "AKfycbzykm32yv3Ke_WE0aq9OdXC-tJTz7r1QGpkRIH3J7FaIDlMScKE6a1eijO2VNVRfKlLKw"; //--> spreadsheet script ID
+char ssid[] = "YOUR_WIFI_SSID";
+char pass[] = "YOUR_WIFI_PASSWORD";
+String GAS_ID = "YOUR_GOOGLE_APPS_SCRIPT_ID"; //--> spreadsheet script ID
 const char* host = "script.google.com"; // only google.com not https://google.com
 
 volatile int flow_frequency; // Measures flow sensor pulses
